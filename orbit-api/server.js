@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const jwtDecode = require("jwt-decode");
 const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
 
 const dashboardData = require("./data/dashboard");
 const User = require("./data/User");
@@ -232,6 +233,24 @@ app.patch("/api/bio", async (req, res) => {
       message: "There was a problem updating your bio",
     });
   }
+});
+
+// remove later
+app.get("/api/users/all", (req, res) => {
+  token = req.headers.authorization.split(" ")[1];
+  secret = "your-256-bit-secret";
+  let isValidToken;
+  jwt.verify(token, secret, (err) => {
+    if (!err) isValidToken = true;
+  });
+  if (isValidToken) {
+    return res.json([
+      { id: 1, name: "John Doe" },
+      { id: 2, name: "Jane Doe" },
+      { id: 3, name: "Jim Doe" },
+    ]);
+  }
+  return res.status(401).send("invalid token");
 });
 
 async function connect() {

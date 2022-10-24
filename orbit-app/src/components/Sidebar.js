@@ -69,21 +69,25 @@ const NavItem = ({ navItem }) => {
 const NavItemContainer = ({ children }) => <div>{children}</div>;
 
 const Sidebar = () => {
-  const { isAdmin } = useContext(AuthContext);
-  const filteredNavItems = navItems.filter((item) =>
-    isAdmin() ? item.allowedRoles.includes("admin") : item.allowedRoles.includes("user")
-  );
+  const {
+    authState: {
+      userInfo: { role },
+    },
+  } = useContext(AuthContext);
+
   return (
     <section className="h-screen">
       <div className="w-16 sm:w-24 m-auto">
         <img src={logo} rel="logo" alt="Logo" />
       </div>
       <div className="mt-20">
-        {filteredNavItems.map((navItem, i) => (
-          <NavItemContainer key={i}>
-            <NavItem navItem={navItem} />
-          </NavItemContainer>
-        ))}
+        {navItems.map((navItem, i) =>
+          navItem.allowedRoles.includes(role) ? (
+            <NavItemContainer key={i}>
+              <NavItem navItem={navItem} />
+            </NavItemContainer>
+          ) : null
+        )}
       </div>
     </section>
   );
