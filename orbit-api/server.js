@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const jwtDecode = require("jwt-decode");
 const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
+const jwt = require("express-jwt");
 
 const dashboardData = require("./data/dashboard");
 const User = require("./data/User");
@@ -117,7 +117,23 @@ app.post("/api/signup", async (req, res) => {
   }
 });
 
-app.get("/api/dashboard-data", (req, res) => res.json(dashboardData));
+app.use(
+  jwt({
+    secret: process.env.JWT_SECRET,
+    issuer: "api.orbit",
+    audience: "api.orbit",
+  })
+);
+
+const requireAdmin = (req, res, next) => {
+  if (req.user.role === "admin") next();
+  else res.status(401).json("Not authorized.");
+};
+
+app.get("/api/dashboard-data", (req, res) => {
+  console.log(req.user);
+  res.json(dashboardData);
+});
 
 app.patch("/api/user-role", async (req, res) => {
   try {
@@ -136,18 +152,21 @@ app.patch("/api/user-role", async (req, res) => {
   }
 });
 
-app.get("/api/inventory", async (req, res) => {
+app.get("/api/inventory", requireAdmin, async (req, res) => {
   try {
-    const inventoryItems = await InventoryItem.find();
+    const inventoryItems = await InventoryItem.find({ user: req.user.sub });
     res.json(inventoryItems);
   } catch (err) {
     return res.status(400).json({ error: err });
   }
 });
 
-app.post("/api/inventory", async (req, res) => {
+app.post("/api/inventory", requireAdmin, async (req, res) => {
   try {
-    const inventoryItem = new InventoryItem(req.body);
+    const inventoryItem = new InventoryItem({
+      ...req.body,
+      user: req.user.sub,
+    });
     await inventoryItem.save();
     res.status(201).json({
       message: "Inventory item created!",
@@ -161,9 +180,12 @@ app.post("/api/inventory", async (req, res) => {
   }
 });
 
-app.delete("/api/inventory/:id", async (req, res) => {
+app.delete("/api/inventory/:id", requireAdmin, async (req, res) => {
   try {
-    const deletedItem = await InventoryItem.findOneAndDelete({ _id: req.params.id });
+    const deletedItem = await InventoryItem.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user.sub,
+    });
     res.status(201).json({
       message: "Inventory item deleted!",
       deletedItem,
@@ -233,24 +255,6 @@ app.patch("/api/bio", async (req, res) => {
       message: "There was a problem updating your bio",
     });
   }
-});
-
-// remove later
-app.get("/api/users/all", (req, res) => {
-  token = req.headers.authorization.split(" ")[1];
-  secret = "your-256-bit-secret";
-  let isValidToken;
-  jwt.verify(token, secret, (err) => {
-    if (!err) isValidToken = true;
-  });
-  if (isValidToken) {
-    return res.json([
-      { id: 1, name: "John Doe" },
-      { id: 2, name: "Jane Doe" },
-      { id: 3, name: "Jim Doe" },
-    ]);
-  }
-  return res.status(401).send("invalid token");
 });
 
 async function connect() {

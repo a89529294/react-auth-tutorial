@@ -13,6 +13,7 @@ const AuthProvider = ({ children }) => {
       userInfo: JSON.parse(localStorage.getItem("userInfo")) ?? {},
     };
   });
+  console.log("AuthContext: " + authState.token);
 
   function setAuthInfo({ token, expiresAt, userInfo }) {
     localStorage.setItem("token", token);

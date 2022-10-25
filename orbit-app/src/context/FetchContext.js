@@ -5,19 +5,15 @@ import { AuthContext } from "./AuthContext";
 const FetchContext = createContext();
 const { Provider } = FetchContext;
 
-const authAxios = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
-});
-
 const FetchProvider = ({ children }) => {
-  const {
-    authState: { token },
-  } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
 
-  authAxios.interceptors.request.use((config) => ({
-    ...config,
-    headers: { Authorization: `Bearer ${token}` },
-  }));
+  const authAxios = axios.create({
+    baseURL: process.env.REACT_APP_API_URL,
+    headers: {
+      Authorization: `Bearer ${authContext.authState.token}`,
+    },
+  });
 
   return (
     <Provider
